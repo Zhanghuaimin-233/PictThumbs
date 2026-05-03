@@ -25,21 +25,24 @@ PictThumbs is a standalone Windows Shell thumbnail provider extracted from the [
 ### Prerequisites
 
 - Windows 10/11
-- CMake 3.15+
-- Visual Studio 2019+ or compatible C++17 compiler
+- Visual Studio 2019+ (with C++ desktop development workload)
+- CMake 3.15+ (included with Visual Studio)
 
 ### Build Steps
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/PictThumbs.git
+git clone https://github.com/Zhanghuaimin-233/PictThumbs.git
 cd PictThumbs
 
 # Create build directory
 mkdir build
 cd build
 
-# Configure with CMake
+# Configure with CMake (VS2019)
+cmake .. -G "Visual Studio 16 2019" -A x64
+
+# Or for VS2022
 cmake .. -G "Visual Studio 17 2022" -A x64
 
 # Build
@@ -47,6 +50,19 @@ cmake --build . --config Release
 ```
 
 The DLL will be output to `build/bin/Release/PictThumbs.dll`.
+
+### Using Visual Studio IDE
+
+1. Open the project folder in Visual Studio
+2. Visual Studio will automatically detect CMakeLists.txt
+3. Select `Release` configuration and `x64` platform
+4. Build → Build Solution (Ctrl+Shift+B)
+
+### Using CLion
+
+1. Open the project folder in CLion
+2. Configure toolchain to use Visual Studio (MSVC)
+3. Build the project
 
 ## Installation
 
@@ -68,22 +84,32 @@ regsvr32 /u PictThumbs.dll
 
 ```
 PictThumbs/
-├── src/                    # Main DLL source code
-│   ├── dllmain.cpp/h       # DLL entry point
-│   ├── cthumbprovider.cpp/h # Thumbnail provider implementation
-│   ├── ClassFactory.cpp/h  # COM class factory
-│   ├── codecsetup.cpp/h    # Codec configuration
-│   ├── regsetup.cpp/h      # Registry setup
-│   └── regutils.cpp/h      # Registry utilities
-├── illa/                   # Image codec library (simplified)
-│   ├── core/               # Core framework
-│   └── codecs/             # Individual codec implementations
-├── orz/                    # Utility library (simplified)
-├── metadata/               # EXIF metadata library
-├── third_party/            # Third-party libraries
-│   ├── libwebp/            # WebP decoder
-│   └── zlib/               # Compression library
-└── CMakeLists.txt          # Build configuration
+├── src/                        # Main DLL source code
+│   ├── dllmain.cpp/h           # DLL entry point
+│   ├── cthumbprovider.cpp/h    # Thumbnail provider implementation
+│   ├── ClassFactory.cpp/h      # COM class factory
+│   ├── codecsetup.cpp/h        # Codec configuration
+│   ├── regsetup.cpp/h          # Registry setup
+│   └── regutils.cpp/h          # Registry utilities
+├── illa/                       # Image codec library
+│   ├── core/                   # Core framework (surface, filter, render)
+│   └── codecs/                 # Individual codec implementations
+│       ├── pcx/                # PCX codec
+│       ├── tga/                # TGA codec
+│       ├── wbmp/               # WBMP codec
+│       ├── psd/                # PSD codec
+│       ├── psp/                # PSP codec
+│       ├── webp/               # WebP codec (uses libwebp)
+│       └── xyz/                # XYZ codec (uses zlib)
+├── orz/                        # Utility library
+├── metadata/                   # EXIF metadata library
+├── third_party/                # Third-party libraries
+│   ├── libwebp/                # WebP decoder
+│   └── zlib/                   # Compression library
+├── CMakeLists.txt              # Top-level build configuration
+└── build/                      # Build output (generated)
+    └── bin/Release/
+        └── PictThumbs.dll      # Output DLL
 ```
 
 ## Technical Details
@@ -92,10 +118,12 @@ PictThumbs/
 - **Threading Model**: Single-threaded apartment (STA)
 - **Image Processing**: Lanczos3 resampling for high-quality thumbnails
 - **Alpha Support**: Automatic alpha channel detection and premultiplication
+- **C++ Standard**: C++17
+- **Dependencies**: No external dependencies (Boost removed)
 
 ## Dependencies
 
-- Windows SDK (shlwapi, thumbcache, propsys)
+- Windows SDK (shlwapi, thumbcache, propsys, ws2_32)
 - C++17 Standard Library
 
 ## License

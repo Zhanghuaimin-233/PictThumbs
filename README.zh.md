@@ -25,8 +25,8 @@ PictThumbs 是从 [Pictus](https://github.com/poppeman/Pictus) 图像查看器�
 ### 环境要求
 
 - Windows 10/11
-- CMake 3.15+
-- Visual Studio 2019+ 或兼容的 C++17 编译器
+- Visual Studio 2019+（需要安装 C++ 桌面开发工作负载）
+- CMake 3.15+（Visual Studio 自带）
 
 ### 构建步骤
 
@@ -39,7 +39,10 @@ cd PictThumbs
 mkdir build
 cd build
 
-# 使用 CMake 配置
+# 使用 CMake 配置（VS2019）
+cmake .. -G "Visual Studio 16 2019" -A x64
+
+# 或者 VS2022
 cmake .. -G "Visual Studio 17 2022" -A x64
 
 # 构建
@@ -47,6 +50,19 @@ cmake --build . --config Release
 ```
 
 构建完成后，DLL 文件位于 `build/bin/Release/PictThumbs.dll`。
+
+### 使用 Visual Studio IDE
+
+1. 在 Visual Studio 中打开项目文件夹
+2. Visual Studio 会自动检测 CMakeLists.txt
+3. 选择 `Release` 配置和 `x64` 平台
+4. 生成 → 生成解决方案 (Ctrl+Shift+B)
+
+### 使用 CLion
+
+1. 在 CLion 中打开项目文件夹
+2. 配置工具链为 Visual Studio (MSVC)
+3. 构建项目
 
 ## 安装
 
@@ -68,22 +84,32 @@ regsvr32 /u PictThumbs.dll
 
 ```
 PictThumbs/
-├── src/                    # 主 DLL 源代码
-│   ├── dllmain.cpp/h       # DLL 入口点
-│   ├── cthumbprovider.cpp/h # 缩略图提供程序实现
-│   ├── ClassFactory.cpp/h  # COM 类工厂
-│   ├── codecsetup.cpp/h    # 编解码器配置
-│   ├── regsetup.cpp/h      # 注册表设置
-│   └── regutils.cpp/h      # 注册表工具
-├── illa/                   # 图像编解码库（精简版）
-│   ├── core/               # 核心框架
-│   └── codecs/             # 各格式编解码器实现
-├── orz/                    # 工具库（精简版）
-├── metadata/               # EXIF 元数据解析库
-├── third_party/            # 第三方库
-│   ├── libwebp/            # WebP 解码器
-│   └── zlib/               # 压缩库
-└── CMakeLists.txt          # 构建配置
+├── src/                        # 主 DLL 源代码
+│   ├── dllmain.cpp/h           # DLL 入口点
+│   ├── cthumbprovider.cpp/h    # 缩略图提供程序实现
+│   ├── ClassFactory.cpp/h      # COM 类工厂
+│   ├── codecsetup.cpp/h        # 编解码器配置
+│   ├── regsetup.cpp/h          # 注册表设置
+│   └── regutils.cpp/h          # 注册表工具
+├── illa/                       # 图像编解码库
+│   ├── core/                   # 核心框架（表面、滤镜、渲染）
+│   └── codecs/                 # 各格式编解码器实现
+│       ├── pcx/                # PCX 编解码器
+│       ├── tga/                # TGA 编解码器
+│       ├── wbmp/               # WBMP 编解码器
+│       ├── psd/                # PSD 编解码器
+│       ├── psp/                # PSP 编解码器
+│       ├── webp/               # WebP 编解码器（使用 libwebp）
+│       └── xyz/                # XYZ 编解码器（使用 zlib）
+├── orz/                        # 工具库
+├── metadata/                   # EXIF 元数据解析库
+├── third_party/                # 第三方库
+│   ├── libwebp/                # WebP 解码器
+│   └── zlib/                   # 压缩库
+├── CMakeLists.txt              # 顶层构建配置
+└── build/                      # 构建输出目录（自动生成）
+    └── bin/Release/
+        └── PictThumbs.dll      # 输出 DLL
 ```
 
 ## 技术细节
@@ -92,10 +118,12 @@ PictThumbs/
 - **线程模型**: 单线程单元 (STA)
 - **图像处理**: 使用 Lanczos3 重采样算法生成高质量缩略图
 - **Alpha 支持**: 自动检测 Alpha 通道并进行预乘处理
+- **C++ 标准**: C++17
+- **依赖**: 无外部依赖（已移除 Boost）
 
 ## 依赖
 
-- Windows SDK (shlwapi, thumbcache, propsys)
+- Windows SDK (shlwapi, thumbcache, propsys, ws2_32)
 - C++17 标准库
 
 ## 许可证
