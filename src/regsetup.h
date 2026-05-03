@@ -1,7 +1,7 @@
 #ifndef PICTTHUMBS_REGSETUP_H
 #define PICTTHUMBS_REGSETUP_H
 
-#include "illa/codecmgr.h"
+#include "illa/core/codecmgr.h"
 
 #include <string>
 

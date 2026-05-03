@@ -29,6 +29,12 @@ set(ILLA_CORE_SOURCES
     core/filter_directcopy.cpp
     core/filter_premultiply.cpp
     core/filter_setalpha.cpp
+    core/filter_brightness_contrast.cpp
+    core/filter_gamma.cpp
+    core/filter_solidcolor.cpp
+    core/filter_colorkey.cpp
+    core/filter_crossblend.cpp
+    core/filter_rotatefixed.cpp
     core/filterjob.cpp
 )
 
@@ -97,7 +103,11 @@ set(ILLA_SOURCES
 
 add_library(illa STATIC ${ILLA_SOURCES})
 
-target_include_directories(illa PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(illa PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/core
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 # Link dependencies
 target_link_libraries(illa orz metadata webp zlib)

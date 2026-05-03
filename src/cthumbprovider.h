@@ -1,8 +1,8 @@
 #ifndef CTHUMBPROVIDER_H
 #define CTHUMBPROVIDER_H
 
-#include "illa/codec.h"
-#include "illa/codecmgr.h"
+#include "illa/core/codec.h"
+#include "illa/core/codecmgr.h"
 #include "orz/logger.h"
 
 #include <propsys.h>

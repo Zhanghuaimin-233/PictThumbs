@@ -3,7 +3,6 @@
 #include "Exif_Types.h"
 #include "Metadata_Types.h"
 #include "Metadata_Value.h"
-#include <boost/algorithm/string.hpp>
 
 namespace Metadata {
 	namespace Exif {

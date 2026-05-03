@@ -4,29 +4,28 @@
 #include "c_factory.h"
 #include "config.h"
 
-// Codecs
-#include "f_bmp.h"
-#include "f_gif.h"
-#include "f_jpeg.h"
-#include "f_pcx.h"
-#include "f_png.h"
-#include "f_tga.h"
-#include "f_wbmp.h"
-#include "f_webp.h"
-#include "f_tiff.h"
-#include "f_psp.h"
-#include "f_psd.h"
-#include "f_xyz.h"
+// Codecs - only include what we have
+#include "../codecs/pcx/f_pcx.h"
+#include "../codecs/tga/f_tga.h"
+#include "../codecs/wbmp/f_wbmp.h"
+#include "../codecs/webp/f_webp.h"
+#include "../codecs/psp/f_psp.h"
+#include "../codecs/psd/f_psd.h"
+#include "../codecs/xyz/f_xyz.h"
 
-#include <boost/locale.hpp>
+#include <algorithm>
 
 namespace Img {
 	bool CodecFactoryStore::DoCodecExist(const char* ext) {
-		return (m_ext.find(boost::locale::to_upper(ext)) != m_ext.end());
+		std::string upper(ext);
+		std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+		return (m_ext.find(upper) != m_ext.end());
 	}
 
 	AbstractCodec* CodecFactoryStore::CreateCodec(const std::string& ext) {
-		auto i = m_ext.find(boost::locale::to_upper(ext));
+		std::string upper(ext);
+		std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+		auto i = m_ext.find(upper);
 		if (i != m_ext.end()) {
 			return i->second->CreateCodec();
 		}
@@ -63,7 +62,9 @@ namespace Img {
 		auto& exts = pCodecFactory->SupportedExtensions();
 
 		for(auto i = 0u; i < exts.size(); i++) {
-			m_ext.insert(ExtPair(exts[i], pFactory));
+			std::string upper(exts[i]);
+			std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+			m_ext.insert(ExtPair(upper, pFactory));
 			info.Extensions.push_back(exts[i]);
 		}
 
@@ -80,15 +81,10 @@ namespace Img {
 
 	void CodecFactoryStore::AddBuiltinCodecs() {
 		AddCodecFactory(new Img::FactoryWebp());
-		AddCodecFactory(new Img::FactoryBMP());
-		AddCodecFactory(new Img::FactoryGIF());
-		AddCodecFactory(new Img::FactoryJPEG());
 		AddCodecFactory(new Img::FactoryPCX());
-		AddCodecFactory(new Img::FactoryPNG());
 		AddCodecFactory(new Img::FactoryTGA());
 		AddCodecFactory(new Img::FactoryWBMP());
 		AddCodecFactory(new Img::FactoryPSP());
-		AddCodecFactory(new Img::FactoryTIFF());
 		AddCodecFactory(new Img::FactoryPSD());
 		AddCodecFactory(new Img::FactoryXYZ());
 	}

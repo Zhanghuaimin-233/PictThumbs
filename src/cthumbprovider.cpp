@@ -1,11 +1,11 @@
 #include "cthumbprovider.h"
-#include "illa/codecmgr.h"
-#include "illa/surfacemgr.h"
+#include "illa/core/codecmgr.h"
+#include "illa/core/surfacemgr.h"
 #include "orz/Win32/stream_windows.h"
-#include "illa/swsurface.h"
-#include "illa/config.h"
-#include "illa/render.h"
-#include "illa/filter.h"
+#include "illa/core/swsurface.h"
+#include "illa/core/config.h"
+#include "illa/core/render.h"
+#include "illa/core/filter.h"
 #include "codecsetup.h"
 
 #include <Shlwapi.h>

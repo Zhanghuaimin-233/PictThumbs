@@ -1,13 +1,12 @@
 #include "codecsetup.h"
-#include "illa/codecmgr.h"
-#include "illa/f_pcx.h"
-#include "illa/f_tga.h"
-#include "illa/f_wbmp.h"
-#include "illa/f_psd.h"
-#include "illa/f_psp.h"
-#include "illa/f_tiff.h"
-#include "illa/f_webp.h"
-#include "illa/f_xyz.h"
+#include "illa/core/codecmgr.h"
+#include "illa/codecs/pcx/f_pcx.h"
+#include "illa/codecs/tga/f_tga.h"
+#include "illa/codecs/wbmp/f_wbmp.h"
+#include "illa/codecs/psd/f_psd.h"
+#include "illa/codecs/psp/f_psp.h"
+#include "illa/codecs/webp/f_webp.h"
+#include "illa/codecs/xyz/f_xyz.h"
 
 void CodecManagerSetup(Img::CodecFactoryStore* cfs) {
 	// With the exception of JPEG, all built-in thumbnail providers are good.

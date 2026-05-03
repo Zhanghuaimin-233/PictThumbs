@@ -2,8 +2,9 @@
 
 #include "types.h"
 
-#include <boost/algorithm/string.hpp>
 #include <vector>
+#include <sstream>
+#include <algorithm>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -20,13 +21,25 @@ namespace IO {
 	void Logger::Write(const std::string& message) {
 		// TODO: Work better with the << operator. Currently a single message can get split into multiple rows.
 		m_dbgCached += message;
-		boost::replace_all(m_dbgCached, "\r\n", "\n");
+
+		// Replace \r\n with \n
+		std::string::size_type pos = 0;
+		while ((pos = m_dbgCached.find("\r\n", pos)) != std::string::npos) {
+			m_dbgCached.replace(pos, 2, "\n");
+		}
+
+		// Split by \n
 		std::vector<std::string> lines;
-		boost::split(lines, m_dbgCached, boost::is_any_of("\n"));
-		if (lines.empty() == false) {
+		std::istringstream stream(m_dbgCached);
+		std::string line;
+		while (std::getline(stream, line)) {
+			lines.push_back(line);
+		}
+
+		if (!lines.empty()) {
 			m_dbgCached = lines.back();
 			lines.pop_back();
-			for (auto l : lines) {
+			for (const auto& l : lines) {
 				auto u8str = "Pictus: " + l + "\r\n";
 #ifdef _WIN32
 				OutputDebugStringW(UTF8ToWString(u8str.c_str()).c_str());

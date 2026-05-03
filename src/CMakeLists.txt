@@ -33,7 +33,7 @@ add_library(PictThumbs SHARED ${PICTTHUMBS_SOURCES} ${PICTTHUMBS_HEADERS} ${PICT
 target_include_directories(PictThumbs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # Link dependencies
-target_link_libraries(PictThumbs illa orz metadata shlwapi)
+target_link_libraries(PictThumbs illa orz metadata webp webpdemux zlib shlwapi ws2_32)
 
 # Set output name
 set_target_properties(PictThumbs PROPERTIES OUTPUT_NAME "PictThumbs")

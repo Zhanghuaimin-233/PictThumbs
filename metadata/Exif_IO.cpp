@@ -1,5 +1,5 @@
 #include "Exif_IO.h"
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
 
 namespace Metadata {
 	namespace Exif {
@@ -53,7 +53,12 @@ namespace Metadata {
 			bytes[components] = 0;
 
 			// Olympus cameras seems to pad various strings with spaces at the end.
-			return boost::trim_right_copy(std::string{ &bytes[0] });
+			std::string result{ &bytes[0] };
+			auto end = result.find_last_not_of(" \t\n\r");
+			if (end != std::string::npos) {
+				result.erase(end + 1);
+			}
+			return result;
 		}
 
 		Metadata::Rational ReadRational(IO::FileReader::Ptr ms, ByteOrder o, size_t position)

@@ -1,4 +1,4 @@
 
-#include "illa/codecmgr.h"
+#include "illa/core/codecmgr.h"
 
 void CodecManagerSetup(Img::CodecFactoryStore* cfs);
