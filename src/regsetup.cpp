@@ -78,7 +78,12 @@ HRESULT UnRegisterThumbnailProvider(const std::string& clsId, const std::string&
 	auto ret = GetHkcrRegistryKeyAndValue(currentSubKey, 0);
 	auto hr = std::get<0>(ret);
 	auto currentClsId = std::get<1>(ret);
-	if (FAILED(hr)) return hr; // Couldn't read value, that's an error
+	
+	// If the key doesn't exist, that's OK - nothing to unregister
+	if (FAILED(hr)) {
+		Log << "(Thumb:UnRegisterThumbnailProvider): Key not found for " << extension << ", skipping.\n";
+		return S_OK;
+	}
 
 	if (currentClsId != clsId) {
 		Log << "(Thumb:UnRegisterThumbnailProvider): CLSID mismatch for " << extension << ", expected " << clsId << " but got " << currentClsId << "\n";
