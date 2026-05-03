@@ -9,6 +9,8 @@
 #include "codecsetup.h"
 
 #include <Shlwapi.h>
+#include <shellapi.h>
+#include <algorithm>
 
 using namespace Img;
 using namespace Geom;
@@ -55,6 +57,10 @@ IFACEMETHODIMP CPictusThumbnailProvider::Initialize(_In_ IStream *pStream, _In_ 
 	IO::Stream::Ptr winStream(new IO::StreamWindows(stream));
 	m_reader.reset(new IO::FileReader(winStream));
 
+	// Try to detect the file extension from the stream
+	// We'll use the codec detection to determine the format
+	m_extension = "";
+
 	return S_OK;
 }
 
@@ -69,6 +75,89 @@ DimData DetermineDimensions(UINT cx, Geom::SizeInt surfDims) {
 	d.scale = std::min(factors.Width, std::min(factors.Height, 1.0f));
 	d.sz = (surfDims * d.scale).StaticCast<int>();
 	return d;
+}
+
+void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx) {
+	if (m_extension.empty()) {
+		return;
+	}
+
+	// Get the system icon for this file extension
+	std::wstring extWithDot = L"." + std::wstring(m_extension.begin(), m_extension.end());
+	
+	SHFILEINFOW sfi = {};
+	DWORD dwAttr = FILE_ATTRIBUTE_NORMAL;
+	HRESULT hr = SHGetFileInfoW(
+		extWithDot.c_str(),
+		dwAttr,
+		&sfi,
+		sizeof(sfi),
+		SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES
+	);
+
+	if (FAILED(hr) || !sfi.hIcon) {
+		return;
+	}
+
+	// Create a memory DC for the thumbnail
+	HDC hdcScreen = GetDC(NULL);
+	HDC hdcMem = CreateCompatibleDC(hdcScreen);
+	HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hBitmap);
+
+	// Calculate icon size and position (bottom-right corner)
+	int iconSize = std::max(16, (int)(cx / 4)); // Icon size is 1/4 of thumbnail, minimum 16px
+	int iconX = (int)cx - iconSize - 2; // 2px padding from edge
+	int iconY = (int)cx - iconSize - 2;
+
+	// Draw a semi-transparent background for the icon
+	// Create a semi-transparent black background
+	HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+	RECT rcIcon = { iconX, iconY, iconX + iconSize, iconY + iconSize };
+	
+	// Use alpha blending for the background
+	HDC hdcAlpha = CreateCompatibleDC(hdcScreen);
+	BITMAPINFO bmiAlpha = {};
+	bmiAlpha.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmiAlpha.bmiHeader.biWidth = iconSize;
+	bmiAlpha.bmiHeader.biHeight = iconSize;
+	bmiAlpha.bmiHeader.biPlanes = 1;
+	bmiAlpha.bmiHeader.biBitCount = 32;
+	bmiAlpha.bmiHeader.biCompression = BI_RGB;
+	
+	void* pAlphaBits = nullptr;
+	HBITMAP hAlphaBmp = CreateDIBSection(hdcScreen, &bmiAlpha, DIB_RGB_COLORS, &pAlphaBits, NULL, 0);
+	if (hAlphaBmp) {
+		HBITMAP hOldAlpha = (HBITMAP)SelectObject(hdcAlpha, hAlphaBmp);
+		
+		// Fill with semi-transparent black
+		RECT rcFill = { 0, 0, iconSize, iconSize };
+		HBRUSH hFillBrush = CreateSolidBrush(RGB(32, 32, 32));
+		FillRect(hdcAlpha, &rcFill, hFillBrush);
+		DeleteObject(hFillBrush);
+		
+		// Alpha blend the background onto the thumbnail
+		BLENDFUNCTION blend = {};
+		blend.BlendOp = AC_SRC_OVER;
+		blend.BlendFlags = 0;
+		blend.SourceConstantAlpha = 180; // Semi-transparent
+		blend.AlphaFormat = 0;
+		
+		AlphaBlend(hdcMem, iconX, iconY, iconSize, iconSize,
+				   hdcAlpha, 0, 0, iconSize, iconSize, blend);
+		
+		SelectObject(hdcAlpha, hOldAlpha);
+		DeleteObject(hAlphaBmp);
+	}
+	DeleteDC(hdcAlpha);
+
+	// Draw the icon
+	DrawIconEx(hdcMem, iconX, iconY, sfi.hIcon, iconSize, iconSize, 0, NULL, DI_NORMAL);
+
+	// Cleanup
+	SelectObject(hdcMem, hOldBmp);
+	DeleteDC(hdcMem);
+	ReleaseDC(NULL, hdcScreen);
+	DestroyIcon(sfi.hIcon);
 }
 
 // TODO: Figure out why XYZ doesn't work. Doesn't SEEM to be registry related, so that leaves GetThumbnail.
@@ -97,6 +186,27 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		Img::SurfaceFactory(new FactorySurfaceSoftware);
 		Img::CodecFactoryStore cfs;
 		CodecManagerSetup(&cfs);
+
+		// Detect the format and store extension
+		m_reader->Seek(0, IO::SeekMethod::Begin);
+		AbstractCodec* detectedCodec = nullptr;
+		const Img::CodecFactoryStore::InfoVector& iv = cfs.CodecInfo();
+		for (size_t i = 0; i < iv.size(); ++i) {
+			AbstractCodec* c = cfs.CreateCodec(i);
+			if (c == 0) continue;
+			
+			m_reader->Seek(0, IO::SeekMethod::Begin);
+			if (c->CanDetectFormat() && c->LoadHeader(m_reader)) {
+				detectedCodec = c;
+				// Get the extension from the codec info
+				if (!iv[i].Extensions.empty()) {
+					m_extension = iv[i].Extensions[0];
+				}
+				delete c;
+				break;
+			}
+			delete c;
+		}
 
 		Img::Surface::Ptr s = LoadSurface(cx);
 		if(!s) {
@@ -147,6 +257,9 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		else {
 			Filter::Alpha::SetAlpha(dst, 0xff);
 		}
+
+		// Overlay the file type icon in the bottom-right corner
+		OverlayFileTypeIcon(*phbmp, outDims.sz.Width);
 
 		*pdwAlpha = (HasAlpha(s->GetFormat()))?WTSAT_ARGB:WTSAT_RGB;
 
