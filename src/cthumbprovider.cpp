@@ -203,10 +203,19 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		}
 		Log << "(Thumb) Loaded image, dims:" << s->GetSize() << "\n";
 
+		// Shadow border size
+		const int borderSize = 4;
+		int totalWidth = outDims.sz.Width + borderSize * 2;
+		int totalHeight = outDims.sz.Height + borderSize * 2;
+
+		// Ensure we don't exceed cx
+		if (totalWidth > (int)cx) totalWidth = (int)cx;
+		if (totalHeight > (int)cx) totalHeight = (int)cx;
+
 		BITMAPINFO bmi = {};
 		bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
-		bmi.bmiHeader.biWidth = outDims.sz.Width;
-		bmi.bmiHeader.biHeight = -static_cast<LONG>(outDims.sz.Height);
+		bmi.bmiHeader.biWidth = totalWidth;
+		bmi.bmiHeader.biHeight = -static_cast<LONG>(totalHeight);
 		bmi.bmiHeader.biPlanes = 1;
 		bmi.bmiHeader.biBitCount = 32;
 		bmi.bmiHeader.biCompression = BI_RGB;
@@ -223,7 +232,21 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 			return E_UNEXPECTED;
 		}
 
-		Filter::FilterBuffer dst(outDims.sz, 4, pBits, outDims.sz.Width * 4);
+		// Fill with white background (shadow effect)
+		int stride = totalWidth * 4;
+		for (int y = 0; y < totalHeight; y++) {
+			uint8_t* row = pBits + y * stride;
+			for (int x = 0; x < totalWidth; x++) {
+				row[x * 4 + 0] = 255; // B
+				row[x * 4 + 1] = 255; // G
+				row[x * 4 + 2] = 255; // R
+				row[x * 4 + 3] = 255; // A
+			}
+		}
+
+		// Render image centered on the white background
+		uint8_t* imageStart = pBits + borderSize * stride + borderSize * 4;
+		Filter::FilterBuffer dst(outDims.sz, 4, imageStart, stride);
 
 		Img::FilterBufferAndLock src = GenerateFilterBuffer(s);
 
@@ -241,9 +264,9 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		}
 
 		// Overlay the file type icon in the bottom-right corner
-		OverlayFileTypeIcon(*phbmp, outDims.sz.Width);
+		OverlayFileTypeIcon(*phbmp, totalWidth);
 
-		*pdwAlpha = (HasAlpha(s->GetFormat()))?WTSAT_ARGB:WTSAT_RGB;
+		*pdwAlpha = WTSAT_RGB;
 
 		return S_OK;
 	}
