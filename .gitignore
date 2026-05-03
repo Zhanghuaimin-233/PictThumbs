@@ -1,0 +1,47 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.opendb
+*.VC.db
+
+# Compiled files
+*.obj
+*.o
+*.lib
+*.a
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# OS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Generated files
+*.cab
+*.msi
+*.msm
+*.msp
+*.zip
