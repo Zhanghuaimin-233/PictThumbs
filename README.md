@@ -2,6 +2,8 @@
 
 Windows Shell Thumbnail Provider for additional image formats.
 
+English | [简体中文](README.zh.md)
+
 ## Overview
 
 PictThumbs is a standalone Windows Shell thumbnail provider extracted from the [Pictus](https://github.com/poppeman/Pictus) image viewer. It enables Windows Explorer to display thumbnails for image formats that are not natively supported by Windows.
