@@ -82,14 +82,12 @@ void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx) {
 		return;
 	}
 
-	// Get the system icon for this file extension
 	std::wstring extWithDot = L"." + std::wstring(m_extension.begin(), m_extension.end());
 	
 	SHFILEINFOW sfi = {};
-	DWORD dwAttr = FILE_ATTRIBUTE_NORMAL;
 	HRESULT hr = SHGetFileInfoW(
 		extWithDot.c_str(),
-		dwAttr,
+		FILE_ATTRIBUTE_NORMAL,
 		&sfi,
 		sizeof(sfi),
 		SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES
@@ -99,22 +97,15 @@ void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx) {
 		return;
 	}
 
-	// Create a memory DC for the thumbnail
 	HDC hdcScreen = GetDC(NULL);
 	HDC hdcMem = CreateCompatibleDC(hdcScreen);
 	HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hBitmap);
 
-	// Calculate icon size and position (bottom-right corner)
-	int iconSize = std::max(16, (int)(cx / 4)); // Icon size is 1/4 of thumbnail, minimum 16px
-	int iconX = (int)cx - iconSize - 2; // 2px padding from edge
+	int iconSize = std::max(16, (int)(cx / 4));
+	int iconX = (int)cx - iconSize - 2;
 	int iconY = (int)cx - iconSize - 2;
 
-	// Draw a semi-transparent background for the icon
-	// Create a semi-transparent black background
-	HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-	RECT rcIcon = { iconX, iconY, iconX + iconSize, iconY + iconSize };
-	
-	// Use alpha blending for the background
+	// Semi-transparent background
 	HDC hdcAlpha = CreateCompatibleDC(hdcScreen);
 	BITMAPINFO bmiAlpha = {};
 	bmiAlpha.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -128,32 +119,23 @@ void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx) {
 	HBITMAP hAlphaBmp = CreateDIBSection(hdcScreen, &bmiAlpha, DIB_RGB_COLORS, &pAlphaBits, NULL, 0);
 	if (hAlphaBmp) {
 		HBITMAP hOldAlpha = (HBITMAP)SelectObject(hdcAlpha, hAlphaBmp);
-		
-		// Fill with semi-transparent black
 		RECT rcFill = { 0, 0, iconSize, iconSize };
 		HBRUSH hFillBrush = CreateSolidBrush(RGB(32, 32, 32));
 		FillRect(hdcAlpha, &rcFill, hFillBrush);
 		DeleteObject(hFillBrush);
 		
-		// Alpha blend the background onto the thumbnail
 		BLENDFUNCTION blend = {};
 		blend.BlendOp = AC_SRC_OVER;
-		blend.BlendFlags = 0;
-		blend.SourceConstantAlpha = 180; // Semi-transparent
-		blend.AlphaFormat = 0;
-		
-		AlphaBlend(hdcMem, iconX, iconY, iconSize, iconSize,
-				   hdcAlpha, 0, 0, iconSize, iconSize, blend);
+		blend.SourceConstantAlpha = 180;
+		AlphaBlend(hdcMem, iconX, iconY, iconSize, iconSize, hdcAlpha, 0, 0, iconSize, iconSize, blend);
 		
 		SelectObject(hdcAlpha, hOldAlpha);
 		DeleteObject(hAlphaBmp);
 	}
 	DeleteDC(hdcAlpha);
 
-	// Draw the icon
 	DrawIconEx(hdcMem, iconX, iconY, sfi.hIcon, iconSize, iconSize, 0, NULL, DI_NORMAL);
 
-	// Cleanup
 	SelectObject(hdcMem, hOldBmp);
 	DeleteDC(hdcMem);
 	ReleaseDC(NULL, hdcScreen);
