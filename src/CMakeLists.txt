@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 set(PICTTHUMBS_SOURCES
     dllmain.cpp
     cthumbprovider.cpp
+    cpreviewhandler.cpp
     ClassFactory.cpp
     DllRef.cpp
     codecsetup.cpp
@@ -13,6 +14,7 @@ set(PICTTHUMBS_SOURCES
 set(PICTTHUMBS_HEADERS
     dllmain.h
     cthumbprovider.h
+    cpreviewhandler.h
     ClassFactory.h
     DllRef.h
     codecsetup.h

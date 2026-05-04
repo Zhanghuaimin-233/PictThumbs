@@ -2,11 +2,17 @@
 
 ## 项目概述
 
-PictThumbs 是一个独立的 Windows Shell 缩略图提供程序，从 Pictus 图像查看器项目中提取。它能让 Windows 资源管理器显示原生不支持的图像格式的缩略图。
+PictThumbs 是一个独立的 Windows Shell 缩略图提供程序，从 Pictus 图像查看器项目中提取。它能让 Windows 资源管理器显示原生不支持的图像格式的缩略图和预览。
 
 **仓库地址**: https://github.com/Zhanghuaimin-233/PictThumbs
 
 **支持格式**: PCX, TGA, WBMP, PSD, PSP, WebP, XYZ
+
+**功能**:
+- 缩略图显示 (IThumbnailProvider)
+- 预览窗格支持 (IPreviewHandler) - 2026-05-04 新增
+- 文件类型图标叠加
+- Windows 风格白底阴影效果
 
 ## 构建环境
 
@@ -55,6 +61,7 @@ PictThumbs/
 ├── src/                        # 主 DLL 源代码 (19 文件)
 │   ├── dllmain.cpp/h           # DLL 入口点
 │   ├── cthumbprovider.cpp/h    # 缩略图提供程序 (核心)
+│   ├── cpreviewhandler.cpp/h   # 预览处理程序 (新增)
 │   ├── ClassFactory.cpp/h      # COM 类工厂
 │   ├── codecsetup.cpp/h        # 编解码器配置
 │   ├── regsetup.cpp/h          # 注册表操作
@@ -90,7 +97,9 @@ PictThumbs/
 ├── CMakeLists.txt              # 顶层构建配置
 ├── CLAUDE.md                   # 本文件
 ├── README.md                   # 英文文档
-└── README.zh.md                # 中文文档
+├── README.zh.md                # 中文文档
+└── docs/                       # 文档目录
+    └── troubleshooting.md      # 问题排查指南
 ```
 
 ## 关键文件说明
@@ -118,6 +127,11 @@ PictThumbs/
 ### COM 接口
 - `IInitializeWithStream`: 接收文件流
 - `IThumbnailProvider`: 生成缩略图
+- `IPreviewHandler`: 预览窗格显示 (新增)
+- `IInitializeWithFile`: 从文件路径初始化 (新增)
+- `IOleWindow`: 窗口管理 (新增)
+- `IObjectWithSite`: 站点对象 (新增)
+- `IPreviewHandlerVisuals`: 视觉效果 (新增)
 - 线程模型: 单线程单元 (STA)
 
 ### 图像处理
@@ -128,7 +142,11 @@ PictThumbs/
 ### 注册表结构
 注册时写入：
 - `HKCR\CLSID\{36FCD09A-...}`: COM 类注册
-- `HKCR\.ext\shellex\{e357fccd-...}`: 文件扩展名关联
+- `HKCR\.ext\shellex\{e357fccd-...}`: 文件扩展名关联 (缩略图)
+- `HKCR\.ext\shellex\{8895b1c6-...}`: 文件扩展名关联 (预览)
+- `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PreviewHandlers`: 全局预览处理程序列表
+- `HKCR\CLSID\{CLSID}\AppID`: 预览处理程序 AppID
+- `HKCR\AppID\{6d2b5079-...}\DllSurrogate`: Prevhost.exe 配置
 
 ## 依赖关系
 
@@ -165,12 +183,15 @@ PictThumbs.dll
 - 叠加文件类型图标到缩略图右下角
 - 添加 Windows 风格白底阴影效果
 - 修复 DLL 卸载时的 0x80070002 错误
+- 添加预览窗格支持 (IPreviewHandler) - 功能已实现但 Windows 11 未完全适配
 
 ## 已知问题
 
 1. XYZ 格式在某些情况下可能不工作
 2. 没有安装对应软件时，文件类型图标显示为空白
 3. 需要管理员权限才能注册/卸载 DLL
+4. **预览窗格在 Windows 11 上不工作** - 已实现 IPreviewHandler 接口，注册表配置正确，但 Prevhost.exe 进程未启动，Windows 11 资源管理器未调用预览处理程序。原因待查，可能是 Win11 安全机制或数字签名要求。基本缩略图功能不受影响。
+5. Windows 11 详细信息窗格显示文件图标而非缩略图 - 可能与 Win11 的 Shell 扩展安全限制有关
 
 ## 后续改进方向
 
@@ -178,6 +199,7 @@ PictThumbs.dll
 2. 创建安装程序自动注册 DLL
 3. 添加配置选项 (如阴影样式、图标位置)
 4. 支持 Windows 11 新版缩略图 API
+5. **解决 Windows 11 预览窗格不工作的问题** - 需要进一步研究 Win11 安全机制
 
 ## 注意事项
 

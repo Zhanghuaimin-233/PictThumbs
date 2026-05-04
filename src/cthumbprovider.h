@@ -29,7 +29,7 @@ public:
 private:
 	Img::Surface::Ptr LoadSurface(UINT cx);
 	Img::AbstractCodec* FindCodec();
-	void OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx);
+	void OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx, UINT cy);
 
 	Img::CodecFactoryStore m_cfs;
 

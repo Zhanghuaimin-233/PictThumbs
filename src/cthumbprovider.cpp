@@ -77,7 +77,7 @@ DimData DetermineDimensions(UINT cx, Geom::SizeInt surfDims) {
 	return d;
 }
 
-void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx) {
+void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx, UINT cy) {
 	if (m_extension.empty()) {
 		return;
 	}
@@ -90,7 +90,7 @@ void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx) {
 		FILE_ATTRIBUTE_NORMAL,
 		&sfi,
 		sizeof(sfi),
-		SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES
+		SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES
 	);
 
 	if (FAILED(hr) || !sfi.hIcon) {
@@ -101,9 +101,9 @@ void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx) {
 	HDC hdcMem = CreateCompatibleDC(hdcScreen);
 	HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hBitmap);
 
-	int iconSize = std::max(16, (int)(cx / 4));
-	int iconX = (int)cx - iconSize - 2;
-	int iconY = (int)cx - iconSize - 2;
+	int iconSize = std::max(24, (int)(std::min(cx, cy) / 3));
+	int iconX = (int)cx - iconSize - 4;
+	int iconY = (int)cy - iconSize - 4;
 
 	// Semi-transparent background
 	HDC hdcAlpha = CreateCompatibleDC(hdcScreen);
@@ -264,7 +264,7 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		}
 
 		// Overlay the file type icon in the bottom-right corner
-		OverlayFileTypeIcon(*phbmp, totalWidth);
+		OverlayFileTypeIcon(*phbmp, totalWidth, totalHeight);
 
 		*pdwAlpha = WTSAT_RGB;
 
