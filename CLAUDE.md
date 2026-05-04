@@ -1,176 +1,199 @@
 # CLAUDE.md
 
-## 行为准则
+## 项目概述
 
-基于Andrej Karpathy观察的LLM编码行为准则，减少常见的AI编码错误。
+PictThumbs 是一个独立的 Windows Shell 缩略图提供程序，从 Pictus 图像查看器项目中提取。它能让 Windows 资源管理器显示原生不支持的图像格式的缩略图。
 
-**权衡：** 这些准则偏向谨慎而非速度。对于简单任务，请自行判断。
+**仓库地址**: https://github.com/Zhanghuaimin-233/PictThumbs
 
-### 1. 编码前思考
+**支持格式**: PCX, TGA, WBMP, PSD, PSP, WebP, XYZ
 
-**不要假设。不要隐藏困惑。明确权衡。**
+## 构建环境
 
-实现前：
-- 明确说明你的假设。如果不确定，请提问。
-- 如果存在多种解释，请呈现它们 - 不要默默选择。
-- 如果存在更简单的方法，请说出来。必要时提出反对。
-- 如果某些内容不明确，请停止。指出令人困惑的地方。提问。
+### 系统要求
+- Windows 10/11
+- Visual Studio 2019+ (需要 C++ 桌面开发工作负载)
+- CMake 3.15+ (VS2019 自带)
 
-### 2. 简单优先
+### 构建命令
 
-**解决问题的最少代码。不要投机性添加。**
+```bash
+# 进入项目目录
+cd E:\Dev\Projects\PictThumbs
 
-- 不要添加超出要求的功能。
-- 不要为单次使用的代码添加抽象。
-- 不要添加未请求的"灵活性"或"可配置性"。
-- 不要为不可能的场景添加错误处理。
-- 如果写了200行但50行就够，重写它。
+# 创建构建目录
+mkdir build
+cd build
 
-问自己："资深工程师会说这过度复杂了吗？" 如果是，简化它。
+# 配置 (VS2019)
+cmake .. -G "Visual Studio 16 2019" -A x64
 
-### 3. 精确修改
-
-**只修改必须修改的。只清理自己造成的混乱。**
-
-编辑现有代码时：
-- 不要"改进"相邻的代码、注释或格式。
-- 不要重构没有损坏的东西。
-- 匹配现有风格，即使你会以不同方式做。
-- 如果发现不相关的死代码，提及它 - 不要删除它。
-
-当你的修改产生孤立代码时：
-- 删除你的修改使其未使用的导入/变量/函数。
-- 除非被要求，否则不要删除预先存在的死代码。
-
-测试：每一行更改都应该直接追溯到用户的请求。
-
-### 4. 目标驱动执行
-
-**定义成功标准。循环直到验证。**
-
-将任务转化为可验证的目标：
-- "添加验证" → "为无效输入编写测试，然后使它们通过"
-- "修复错误" → "编写重现错误的测试，然后使它通过"
-- "重构X" → "确保测试在重构前后都通过"
-
-对于多步骤任务，陈述简要计划：
-```
-1. [步骤] → 验证: [检查]
-2. [步骤] → 验证: [检查]
-3. [步骤] → 验证: [检查]
+# 构建 Release 版本
+cmake --build . --config Release
 ```
 
-强大的成功标准让你可以独立循环。弱标准（"让它工作"）需要持续澄清。
+### 输出文件
+- DLL: `build/bin/Release/PictThumbs.dll`
+- 大小: ~468KB
 
----
+## 注册/卸载 DLL
 
-**这些准则有效的标志是：** 更少不必要的更改、更少因过度复杂导致的重写，以及澄清性问题在实现之前出现，而不是在错误之后出现。
+**必须以管理员身份运行命令提示符！**
 
----
+```cmd
+# 注册
+regsvr32 "E:\Dev\Projects\PictThumbs\build\bin\Release\PictThumbs.dll"
 
-## 知识库管理
-
-基于neat-freak skill的知识库清理和同步准则。
-
-### 触发条件
-
-当用户说以下内容时触发此部分：
-- "sync up", "tidy up docs", "update memory", "clean up docs"
-- "/sync", "/neat"
-- "同步一下", "整理文档", "整理一下", "更新记忆", "梳理一下", "收尾"
-- "这个阶段做完了", "新人能直接上手"
-- 任何暗示开发里程碑需要知识同步的短语
-- 当用户报告过时文档、冲突记忆或想要干净移交给队友或其他代理时
-
-### 核心原则
-
-你是一个**知识库编辑**，不是记录员。记录员只会追加，编辑会审查全局、合并重复、修正过期、删除废弃。
-
-### 三类知识体系
-
-| 位置 | 受众 | 职责 |
-|------|------|------|
-| **代理记忆系统**（若支持） | 代理自己跨会话复用 | 个人偏好、非显而易见的项目事实、跨项目参考 |
-| 项目根 `CLAUDE.md` / `AGENTS.md` | 当前项目里的AI（下次会话自己） | 项目约定、结构、红线、环境变量、路由清单 |
-| 项目 `docs/` + `README.md` | **其他人**（人类同事、下游开发者、未来接手的AI） | 接入指南、架构图、运维手册、交接说明、API参考 |
-
-这三层**受众不同，职责不重叠**。
-
-### 执行流程
-
-#### 第一步：盘点现状
-
-1. 列出代理的记忆文件（如有）
-2. 对本次对话涉及的**每一个项目**：
-   - `ls <project-root>/` → 确认根目录结构
-   - `ls <project-root>/docs/ 2>/dev/null` → **枚举所有文档**（缺失也要确认）
-   - 读 `README.md`、`CLAUDE.md` / `AGENTS.md`、每一个 `docs/*.md`
-3. 读全局代理配置（若有）
-4. 回顾本次对话全部内容
-
-**输出一张文件清单**，对每个文件标：「评估过 / 要改 / 不用改」。
-
-#### 第二步：识别变更
-
-**不要只看对话增量有什么新事实，要看新事实会波及哪些文档层级。**
-
-常见模式：
-- 新增API/路由 → CLAUDE.md路由清单 + integration-guide + architecture的Routes
-- 新增/改名环境变量 → CLAUDE.md环境变量表 + runbook + 下游integration-guide
-- 新增数据库表 → CLAUDE.md + architecture的Data Model
-- 新增大特性（跨多文件） → 以上全部 + architecture新章节 + handoff已完成清单
-- 跨项目改动 → 上下游两边的docs**都要对齐**
-
-#### 第三步：实际修改
-
-**必须真的用工具修改现有文件、创建新文件、清理废弃文件**。
-
-**编辑原则**：
-- **合并优于追加**：新信息是对旧信息的更新，改旧条目，不要再加一条
-- **删除优于保留**：完成的临时计划、推翻的决策、过期的上下文，删掉
-- **精确优于冗长**：一条记忆说清楚一件事，别塞三件
-- **绝对时间**：永远使用具体日期，不写"今天"、"最近"
-- **面向读者**：docs/的读者是"第一次接触这个项目的外部人"
-
-#### 第四步：自检清单
-
-- [ ] 第一步列出的每个文件，都判断了"不用改"或"已改"
-- [ ] 记忆索引（若有）里的每个链接指向存在的文件
-- [ ] 每个记忆文件的description和内容对得上
-- [ ] 记忆之间没有互相矛盾
-- [ ] CLAUDE.md / AGENTS.md里提到的路径/命令/工具/环境变量在代码中真实存在
-- [ ] README的安装/运行步骤跟代码一致
-- [ ] 没有相对时间遗留
-
-#### 第五步：变更摘要
-
-在所有文件修改完之后，给用户简洁摘要：
-
-```
-## 同步完成
-
-### 记忆变更
-- 更新：xxx（原因）
-- 新增：xxx
-- 删除：xxx（原因）
-
-### 文档变更（按项目分组，每个项目列全改动的文件）
-- <项目A>/CLAUDE.md — xxx
-- <项目A>/docs/integration-guide.md — xxx
-- <项目A>/docs/architecture.md — xxx
-
-### 未处理
-- xxx（为什么没处理，比如需要用户确认）
+# 卸载
+regsvr32 /u "E:\Dev\Projects\PictThumbs\build\bin\Release\PictThumbs.dll"
 ```
 
-### 特殊情况
+## 项目结构
 
-**项目还没有README或CLAUDE.md/AGENTS.md**：判断项目是不是到了"有可运行代码"的阶段。是→创建。还在vibe阶段→跳过，但在摘要里提一句。
+```
+PictThumbs/
+├── src/                        # 主 DLL 源代码 (19 文件)
+│   ├── dllmain.cpp/h           # DLL 入口点
+│   ├── cthumbprovider.cpp/h    # 缩略图提供程序 (核心)
+│   ├── ClassFactory.cpp/h      # COM 类工厂
+│   ├── codecsetup.cpp/h        # 编解码器配置
+│   ├── regsetup.cpp/h          # 注册表操作
+│   └── regutils.cpp/h          # 注册表工具
+├── illa/                       # 图像编解码库
+│   ├── core/                   # 核心框架 (55 文件)
+│   │   ├── surface.cpp/h       # 图像表面
+│   │   ├── codec.cpp/h         # 编解码器基类
+│   │   ├── codecmgr.cpp/h      # 编解码器管理
+│   │   ├── render.cpp/h        # 渲染引擎
+│   │   ├── filter*.cpp/h       # 滤镜 (Lanczos3, 缩放, Alpha 等)
+│   │   └── ...
+│   └── codecs/                 # 各格式编解码器
+│       ├── pcx/                # PCX 格式 (3 文件)
+│       ├── tga/                # TGA 格式 (6 文件)
+│       ├── wbmp/               # WBMP 格式 (2 文件)
+│       ├── psd/                # PSD 格式 (4 文件)
+│       ├── psp/                # PSP 格式 (3 文件)
+│       ├── webp/               # WebP 格式 (3 文件, 依赖 libwebp)
+│       └── xyz/                # XYZ 格式 (2 文件, 依赖 zlib)
+├── orz/                        # 工具库 (22 文件)
+│   ├── types.cpp/h             # 类型转换 (UTF8/WString)
+│   ├── logger.cpp/h            # 日志
+│   ├── stream*.cpp/h           # IO 流
+│   ├── file_reader.cpp/h       # 文件读取
+│   ├── fileops.cpp/h           # 文件操作
+│   ├── intl.cpp/h              # 国际化
+│   └── Win32/                  # Windows 特定实现
+├── metadata/                   # EXIF 元数据 (15 文件)
+├── third_party/                # 第三方库
+│   ├── libwebp/                # WebP 解码器
+│   └── zlib/                   # 压缩库
+├── CMakeLists.txt              # 顶层构建配置
+├── CLAUDE.md                   # 本文件
+├── README.md                   # 英文文档
+└── README.zh.md                # 中文文档
+```
 
-**对话没有产生新事实**：审查现有记忆和文档有没有过期/冲突/相对时间——审查本身就有价值。
+## 关键文件说明
 
-**记忆之间出现无法自动判断的矛盾**：列在「未处理」让用户决定。
+### cthumbprovider.cpp
+缩略图提供程序的核心实现：
+- `Initialize()`: 接收文件流
+- `GetThumbnail()`: 生成缩略图
+- `LoadSurface()`: 加载图像
+- `FindCodec()`: 自动检测格式
+- `OverlayFileTypeIcon()`: 叠加文件类型图标
 
-**跨项目改动**：本次对话改了多个项目，每个项目都要跑一次完整的第一步。不要假设一个项目的docs改了，另一个就不用。
+### codecmgr.cpp
+编解码器管理器：
+- `AddBuiltinCodecs()`: 注册所有内置编解码器
+- `CreateCodec()`: 创建编解码器实例
+- `DoCodecExist()`: 检查格式是否支持
 
-**发现之前的同步漏了东西**：修掉。不要说"那不是这次对话的事"——你就是这个项目的持续编辑，过去的漏洞也归你管。
+### codecsetup.cpp
+编解码器配置：
+- `CodecManagerSetup()`: 初始化编解码器工厂
+
+## 技术细节
+
+### COM 接口
+- `IInitializeWithStream`: 接收文件流
+- `IThumbnailProvider`: 生成缩略图
+- 线程模型: 单线程单元 (STA)
+
+### 图像处理
+- 缩放算法: Lanczos3 高质量重采样
+- Alpha 处理: 自动检测并预乘
+- 输出格式: 32bpp ARGB DIB
+
+### 注册表结构
+注册时写入：
+- `HKCR\CLSID\{36FCD09A-...}`: COM 类注册
+- `HKCR\.ext\shellex\{e357fccd-...}`: 文件扩展名关联
+
+## 依赖关系
+
+### 外部依赖
+- Windows SDK (shlwapi, thumbcache, propsys, ws2_32, msimg32)
+- C++17 标准库
+
+### 内部依赖链
+```
+PictThumbs.dll
+├── illa.lib (图像编解码)
+│   ├── orz.lib (工具库)
+│   ├── metadata.lib (EXIF)
+│   ├── webp.lib (WebP 解码)
+│   └── zlib.lib (压缩)
+├── orz.lib
+├── metadata.lib
+├── webp.lib
+├── webpdemux.lib
+└── zlib.lib
+```
+
+## 开发历史
+
+### 2026-05-04
+- 从 Pictus 项目分离 PictThumbs 模块
+- 精简 illa 库，只保留 7 个格式 (PCX/TGA/WBMP/PSD/PSP/WebP/XYZ)
+- 移除 Boost 依赖，改用 C++17 标准库
+- 创建 CMake 构建系统
+- 修复编译和链接错误
+- 成功构建 VS2019 Release DLL
+
+### 功能添加
+- 叠加文件类型图标到缩略图右下角
+- 添加 Windows 风格白底阴影效果
+- 修复 DLL 卸载时的 0x80070002 错误
+
+## 已知问题
+
+1. XYZ 格式在某些情况下可能不工作
+2. 没有安装对应软件时，文件类型图标显示为空白
+3. 需要管理员权限才能注册/卸载 DLL
+
+## 后续改进方向
+
+1. 添加更多格式支持 (如 AVIF, HEIF)
+2. 创建安装程序自动注册 DLL
+3. 添加配置选项 (如阴影样式、图标位置)
+4. 支持 Windows 11 新版缩略图 API
+
+## 注意事项
+
+1. **Boost 已完全移除**: 所有 Boost 依赖已替换为 C++17 标准库
+2. **Include 路径**: 编解码器文件使用 `illa/core/xxx.h` 和 `illa/codecs/xxx/xxx.h` 路径
+3. **注册表权限**: 写入 HKCR 需要管理员权限
+4. **文件编码**: 源代码使用 UTF-8 with BOM
+
+## 快速上手
+
+1. 打开项目: `E:\Dev\Projects\PictThumbs`
+2. 构建: `cmake --build build --config Release`
+3. 测试: 以管理员身份注册 DLL
+4. 验证: 在资源管理器中查看 PSD/TGA/WebP 文件的缩略图
+
+## 相关链接
+
+- 原始项目: https://github.com/poppeman/Pictus
+- 本项目: https://github.com/Zhanghuaimin-233/PictThumbs
