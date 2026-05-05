@@ -10,8 +10,8 @@ PictThumbs 是一个独立的 Windows Shell 缩略图提供程序，从 Pictus �
 
 **功能**:
 - 缩略图显示 (IThumbnailProvider)
-- 文件类型图标叠加
-- Windows 风格白底阴影效果
+- 文件类型图标叠加 (48x48, 右下角)
+- 系统原生白底阴影效果
 
 ## 构建环境
 
@@ -53,11 +53,25 @@ regsvr32 "E:\Dev\Projects\PictThumbs\build\bin\Release\PictThumbs.dll"
 regsvr32 /u "E:\Dev\Projects\PictThumbs\build\bin\Release\PictThumbs.dll"
 ```
 
+## 支持格式
+
+| 格式 | 扩展名 | 描述 |
+|------|--------|------|
+| PCX | .pcx | Z-soft PCX (PC Paintbrush) |
+| TGA | .tga | Truevision Targa |
+| WBMP | .wbmp, .wbm | Wireless Bitmap |
+| PSD | .psd | Adobe Photoshop |
+| PSP | .psp, .pspimage | Corel Paint Shop Pro |
+| WebP | .webp | Google WebP |
+| XYZ | .xyz | RPG Maker XYZ |
+
+**总计**: 7 种格式, 9 个扩展名
+
 ## 项目结构
 
 ```
 PictThumbs/
-├── src/                        # 主 DLL 源代码 (19 文件)
+├── src/                        # 主 DLL 源代码
 │   ├── dllmain.cpp/h           # DLL 入口点
 │   ├── cthumbprovider.cpp/h    # 缩略图提供程序 (核心)
 │   ├── ClassFactory.cpp/h      # COM 类工厂
@@ -65,39 +79,16 @@ PictThumbs/
 │   ├── regsetup.cpp/h          # 注册表操作
 │   └── regutils.cpp/h          # 注册表工具
 ├── illa/                       # 图像编解码库
-│   ├── core/                   # 核心框架 (55 文件)
-│   │   ├── surface.cpp/h       # 图像表面
-│   │   ├── codec.cpp/h         # 编解码器基类
-│   │   ├── codecmgr.cpp/h      # 编解码器管理
-│   │   ├── render.cpp/h        # 渲染引擎
-│   │   ├── filter*.cpp/h       # 滤镜 (Lanczos3, 缩放, Alpha 等)
-│   │   └── ...
+│   ├── core/                   # 核心框架
 │   └── codecs/                 # 各格式编解码器
-│       ├── pcx/                # PCX 格式 (3 文件)
-│       ├── tga/                # TGA 格式 (6 文件)
-│       ├── wbmp/               # WBMP 格式 (2 文件)
-│       ├── psd/                # PSD 格式 (4 文件)
-│       ├── psp/                # PSP 格式 (3 文件)
-│       ├── webp/               # WebP 格式 (3 文件, 依赖 libwebp)
-│       └── xyz/                # XYZ 格式 (2 文件, 依赖 zlib)
-├── orz/                        # 工具库 (22 文件)
-│   ├── types.cpp/h             # 类型转换 (UTF8/WString)
-│   ├── logger.cpp/h            # 日志
-│   ├── stream*.cpp/h           # IO 流
-│   ├── file_reader.cpp/h       # 文件读取
-│   ├── fileops.cpp/h           # 文件操作
-│   ├── intl.cpp/h              # 国际化
-│   └── Win32/                  # Windows 特定实现
-├── metadata/                   # EXIF 元数据 (15 文件)
-├── third_party/                # 第三方库
-│   ├── libwebp/                # WebP 解码器
-│   └── zlib/                   # 压缩库
+├── orz/                        # 工具库
+├── metadata/                   # EXIF 元数据
+├── third_party/                # 第三方库 (libwebp, zlib)
+├── docs/                       # 文档目录
+│   └── troubleshooting.md      # 问题排查指南
 ├── CMakeLists.txt              # 顶层构建配置
-├── CLAUDE.md                   # 本文件
 ├── README.md                   # 英文文档
-├── README.zh.md                # 中文文档
-└── docs/                       # 文档目录
-    └── troubleshooting.md      # 问题排查指南
+└── README.zh.md                # 中文文档
 ```
 
 ## 关键文件说明
@@ -105,20 +96,13 @@ PictThumbs/
 ### cthumbprovider.cpp
 缩略图提供程序的核心实现：
 - `Initialize()`: 接收文件流
-- `GetThumbnail()`: 生成缩略图
+- `GetThumbnail()`: 生成缩略图, 叠加文件类型图标
 - `LoadSurface()`: 加载图像
 - `FindCodec()`: 自动检测格式
-- `OverlayFileTypeIcon()`: 叠加文件类型图标
-
-### codecmgr.cpp
-编解码器管理器：
-- `AddBuiltinCodecs()`: 注册所有内置编解码器
-- `CreateCodec()`: 创建编解码器实例
-- `DoCodecExist()`: 检查格式是否支持
 
 ### codecsetup.cpp
 编解码器配置：
-- `CodecManagerSetup()`: 初始化编解码器工厂
+- `CodecManagerSetup()`: 初始化编解码器工厂, 注册 7 种格式
 
 ## 技术细节
 
@@ -135,7 +119,7 @@ PictThumbs/
 ### 注册表结构
 注册时写入：
 - `HKCR\CLSID\{36FCD09A-...}`: COM 类注册
-- `HKCR\.ext\shellex\{e357fccd-...}`: 文件扩展名关联 (缩略图)
+- `HKCR\.ext\shellex\{e357fccd-...}`: 文件扩展名关联
 
 ## 依赖关系
 
@@ -158,32 +142,11 @@ PictThumbs.dll
 └── zlib.lib
 ```
 
-## 开发历史
-
-### 2026-05-04
-- 从 Pictus 项目分离 PictThumbs 模块
-- 精简 illa 库，只保留 7 个格式 (PCX/TGA/WBMP/PSD/PSP/WebP/XYZ)
-- 移除 Boost 依赖，改用 C++17 标准库
-- 创建 CMake 构建系统
-- 修复编译和链接错误
-- 成功构建 VS2019 Release DLL
-
-### 功能添加
-- 叠加文件类型图标到缩略图右下角
-- 添加 Windows 风格白底阴影效果
-- 修复 DLL 卸载时的 0x80070002 错误
-
-## 已知问题
-
-1. XYZ 格式在某些情况下可能不工作
-2. 没有安装对应软件时，文件类型图标显示为空白
-3. 需要管理员权限才能注册/卸载 DLL
-
 ## 重要发现
 
 ### 2026-05-04 Win11 兼容性问题排查
 
-**问题**: 之前的版本（带图标叠加、自定义阴影、预览窗格）在 Win11 上有以下问题：
+**问题**: 之前的版本（带自定义阴影、预览窗格）在 Win11 上有以下问题：
 - 详细信息窗格显示文件图标而非缩略图
 - 缩略图加载缓慢
 
@@ -192,15 +155,19 @@ PictThumbs.dll
 - ✅ 系统原生白底阴影效果
 - ✅ 详细信息窗格正确显示缩略图
 
-**结论**: Win11 对 Shell 扩展有更严格的安全限制，自定义的图标叠加和阴影效果可能导致兼容性问题。建议保持与原项目一致的简洁实现。
+**结论**: Win11 对 Shell 扩展有更严格的安全限制，自定义的阴影效果可能导致兼容性问题。
+
+## 已知问题
+
+1. XYZ 格式在某些情况下可能不工作
+2. 没有安装对应软件时，文件类型图标显示为空白
+3. 需要管理员权限才能注册/卸载 DLL
 
 ## 后续改进方向
 
 1. 添加更多格式支持 (如 AVIF, HEIF)
 2. 创建安装程序自动注册 DLL
-3. 添加配置选项 (如阴影样式、图标位置)
-4. 支持 Windows 11 新版缩略图 API
-5. **解决 Windows 11 预览窗格不工作的问题** - 需要进一步研究 Win11 安全机制
+3. 支持 Windows 11 新版缩略图 API
 
 ## 注意事项
 

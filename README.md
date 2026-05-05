@@ -12,13 +12,15 @@ PictThumbs is a standalone Windows Shell thumbnail provider extracted from the [
 
 | Format | Extension | Description |
 |--------|-----------|-------------|
-| PCX | .pcx | PC Paintbrush |
+| PCX | .pcx | Z-soft PCX (PC Paintbrush) |
 | TGA | .tga | Truevision Targa |
-| WBMP | .wbmp | Wireless Bitmap |
+| WBMP | .wbmp, .wbm | Wireless Bitmap |
 | PSD | .psd | Adobe Photoshop |
-| PSP | .psp | PaintShop Pro |
+| PSP | .psp, .pspimage | Corel Paint Shop Pro |
 | WebP | .webp | Google WebP |
-| XYZ | .xyz | Rolander XYZ |
+| XYZ | .xyz | RPG Maker XYZ |
+
+**Total**: 7 formats, 9 extensions
 
 ## Building
 
@@ -94,13 +96,6 @@ PictThumbs/
 ├── illa/                       # Image codec library
 │   ├── core/                   # Core framework (surface, filter, render)
 │   └── codecs/                 # Individual codec implementations
-│       ├── pcx/                # PCX codec
-│       ├── tga/                # TGA codec
-│       ├── wbmp/               # WBMP codec
-│       ├── psd/                # PSD codec
-│       ├── psp/                # PSP codec
-│       ├── webp/               # WebP codec (uses libwebp)
-│       └── xyz/                # XYZ codec (uses zlib)
 ├── orz/                        # Utility library
 ├── metadata/                   # EXIF metadata library
 ├── third_party/                # Third-party libraries
@@ -118,12 +113,13 @@ PictThumbs/
 - **Threading Model**: Single-threaded apartment (STA)
 - **Image Processing**: Lanczos3 resampling for high-quality thumbnails
 - **Alpha Support**: Automatic alpha channel detection and premultiplication
+- **Icon Overlay**: File type icon (48x48) in bottom-right corner
 - **C++ Standard**: C++17
 - **Dependencies**: No external dependencies (Boost removed)
 
 ## Dependencies
 
-- Windows SDK (shlwapi, thumbcache, propsys, ws2_32)
+- Windows SDK (shlwapi, thumbcache, propsys, ws2_32, msimg32)
 - C++17 Standard Library
 
 ## License
