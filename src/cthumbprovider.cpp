@@ -9,8 +9,6 @@
 #include "codecsetup.h"
 
 #include <Shlwapi.h>
-#include <shellapi.h>
-#include <algorithm>
 
 using namespace Img;
 using namespace Geom;
@@ -57,10 +55,6 @@ IFACEMETHODIMP CPictusThumbnailProvider::Initialize(_In_ IStream *pStream, _In_ 
 	IO::Stream::Ptr winStream(new IO::StreamWindows(stream));
 	m_reader.reset(new IO::FileReader(winStream));
 
-	// Try to detect the file extension from the stream
-	// We'll use the codec detection to determine the format
-	m_extension = "";
-
 	return S_OK;
 }
 
@@ -75,71 +69,6 @@ DimData DetermineDimensions(UINT cx, Geom::SizeInt surfDims) {
 	d.scale = std::min(factors.Width, std::min(factors.Height, 1.0f));
 	d.sz = (surfDims * d.scale).StaticCast<int>();
 	return d;
-}
-
-void CPictusThumbnailProvider::OverlayFileTypeIcon(HBITMAP hBitmap, UINT cx, UINT cy) {
-	if (m_extension.empty()) {
-		return;
-	}
-
-	std::wstring extWithDot = L"." + std::wstring(m_extension.begin(), m_extension.end());
-	
-	SHFILEINFOW sfi = {};
-	HRESULT hr = SHGetFileInfoW(
-		extWithDot.c_str(),
-		FILE_ATTRIBUTE_NORMAL,
-		&sfi,
-		sizeof(sfi),
-		SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES
-	);
-
-	if (FAILED(hr) || !sfi.hIcon) {
-		return;
-	}
-
-	HDC hdcScreen = GetDC(NULL);
-	HDC hdcMem = CreateCompatibleDC(hdcScreen);
-	HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hBitmap);
-
-	int iconSize = std::max(24, (int)(std::min(cx, cy) / 3));
-	int iconX = (int)cx - iconSize - 4;
-	int iconY = (int)cy - iconSize - 4;
-
-	// Semi-transparent background
-	HDC hdcAlpha = CreateCompatibleDC(hdcScreen);
-	BITMAPINFO bmiAlpha = {};
-	bmiAlpha.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bmiAlpha.bmiHeader.biWidth = iconSize;
-	bmiAlpha.bmiHeader.biHeight = iconSize;
-	bmiAlpha.bmiHeader.biPlanes = 1;
-	bmiAlpha.bmiHeader.biBitCount = 32;
-	bmiAlpha.bmiHeader.biCompression = BI_RGB;
-	
-	void* pAlphaBits = nullptr;
-	HBITMAP hAlphaBmp = CreateDIBSection(hdcScreen, &bmiAlpha, DIB_RGB_COLORS, &pAlphaBits, NULL, 0);
-	if (hAlphaBmp) {
-		HBITMAP hOldAlpha = (HBITMAP)SelectObject(hdcAlpha, hAlphaBmp);
-		RECT rcFill = { 0, 0, iconSize, iconSize };
-		HBRUSH hFillBrush = CreateSolidBrush(RGB(32, 32, 32));
-		FillRect(hdcAlpha, &rcFill, hFillBrush);
-		DeleteObject(hFillBrush);
-		
-		BLENDFUNCTION blend = {};
-		blend.BlendOp = AC_SRC_OVER;
-		blend.SourceConstantAlpha = 180;
-		AlphaBlend(hdcMem, iconX, iconY, iconSize, iconSize, hdcAlpha, 0, 0, iconSize, iconSize, blend);
-		
-		SelectObject(hdcAlpha, hOldAlpha);
-		DeleteObject(hAlphaBmp);
-	}
-	DeleteDC(hdcAlpha);
-
-	DrawIconEx(hdcMem, iconX, iconY, sfi.hIcon, iconSize, iconSize, 0, NULL, DI_NORMAL);
-
-	SelectObject(hdcMem, hOldBmp);
-	DeleteDC(hdcMem);
-	ReleaseDC(NULL, hdcScreen);
-	DestroyIcon(sfi.hIcon);
 }
 
 // TODO: Figure out why XYZ doesn't work. Doesn't SEEM to be registry related, so that leaves GetThumbnail.
@@ -169,27 +98,6 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		Img::CodecFactoryStore cfs;
 		CodecManagerSetup(&cfs);
 
-		// Detect the format and store extension
-		m_reader->Seek(0, IO::SeekMethod::Begin);
-		AbstractCodec* detectedCodec = nullptr;
-		const Img::CodecFactoryStore::InfoVector& iv = cfs.CodecInfo();
-		for (size_t i = 0; i < iv.size(); ++i) {
-			AbstractCodec* c = cfs.CreateCodec(i);
-			if (c == 0) continue;
-			
-			m_reader->Seek(0, IO::SeekMethod::Begin);
-			if (c->CanDetectFormat() && c->LoadHeader(m_reader)) {
-				detectedCodec = c;
-				// Get the extension from the codec info
-				if (!iv[i].Extensions.empty()) {
-					m_extension = iv[i].Extensions[0];
-				}
-				delete c;
-				break;
-			}
-			delete c;
-		}
-
 		Img::Surface::Ptr s = LoadSurface(cx);
 		if(!s) {
 			Log << "(Thumb) Failed to load image.\n";
@@ -203,19 +111,10 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		}
 		Log << "(Thumb) Loaded image, dims:" << s->GetSize() << "\n";
 
-		// Shadow border size
-		const int borderSize = 4;
-		int totalWidth = outDims.sz.Width + borderSize * 2;
-		int totalHeight = outDims.sz.Height + borderSize * 2;
-
-		// Ensure we don't exceed cx
-		if (totalWidth > (int)cx) totalWidth = (int)cx;
-		if (totalHeight > (int)cx) totalHeight = (int)cx;
-
 		BITMAPINFO bmi = {};
 		bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
-		bmi.bmiHeader.biWidth = totalWidth;
-		bmi.bmiHeader.biHeight = -static_cast<LONG>(totalHeight);
+		bmi.bmiHeader.biWidth = outDims.sz.Width;
+		bmi.bmiHeader.biHeight = -static_cast<LONG>(outDims.sz.Height);
 		bmi.bmiHeader.biPlanes = 1;
 		bmi.bmiHeader.biBitCount = 32;
 		bmi.bmiHeader.biCompression = BI_RGB;
@@ -232,21 +131,7 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 			return E_UNEXPECTED;
 		}
 
-		// Fill with white background (shadow effect)
-		int stride = totalWidth * 4;
-		for (int y = 0; y < totalHeight; y++) {
-			uint8_t* row = pBits + y * stride;
-			for (int x = 0; x < totalWidth; x++) {
-				row[x * 4 + 0] = 255; // B
-				row[x * 4 + 1] = 255; // G
-				row[x * 4 + 2] = 255; // R
-				row[x * 4 + 3] = 255; // A
-			}
-		}
-
-		// Render image centered on the white background
-		uint8_t* imageStart = pBits + borderSize * stride + borderSize * 4;
-		Filter::FilterBuffer dst(outDims.sz, 4, imageStart, stride);
+		Filter::FilterBuffer dst(outDims.sz, 4, pBits, outDims.sz.Width * 4);
 
 		Img::FilterBufferAndLock src = GenerateFilterBuffer(s);
 
@@ -263,10 +148,7 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 			Filter::Alpha::SetAlpha(dst, 0xff);
 		}
 
-		// Overlay the file type icon in the bottom-right corner
-		OverlayFileTypeIcon(*phbmp, totalWidth, totalHeight);
-
-		*pdwAlpha = WTSAT_RGB;
+		*pdwAlpha = (HasAlpha(s->GetFormat()))?WTSAT_ARGB:WTSAT_RGB;
 
 		return S_OK;
 	}
