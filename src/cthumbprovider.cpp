@@ -9,6 +9,7 @@
 #include "codecsetup.h"
 
 #include <Shlwapi.h>
+#include <shellapi.h>
 
 using namespace Img;
 using namespace Geom;
@@ -98,6 +99,24 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		Img::CodecFactoryStore cfs;
 		CodecManagerSetup(&cfs);
 
+		// 检测格式并保存扩展名
+		m_reader->Seek(0, IO::SeekMethod::Begin);
+		const Img::CodecFactoryStore::InfoVector& iv = cfs.CodecInfo();
+		for (size_t i = 0; i < iv.size(); ++i) {
+			AbstractCodec* c = cfs.CreateCodec(i);
+			if (c == 0) continue;
+			
+			m_reader->Seek(0, IO::SeekMethod::Begin);
+			if (c->CanDetectFormat() && c->LoadHeader(m_reader)) {
+				if (!iv[i].Extensions.empty()) {
+					m_extension = iv[i].Extensions[0];
+				}
+				delete c;
+				break;
+			}
+			delete c;
+		}
+
 		Img::Surface::Ptr s = LoadSurface(cx);
 		if(!s) {
 			Log << "(Thumb) Failed to load image.\n";
@@ -146,6 +165,57 @@ _Use_decl_annotations_ IFACEMETHODIMP CPictusThumbnailProvider::GetThumbnail(UIN
 		}
 		else {
 			Filter::Alpha::SetAlpha(dst, 0xff);
+		}
+
+		// 叠加文件类型图标到右下角
+		if (!m_extension.empty()) {
+			std::wstring extWithDot = L"." + std::wstring(m_extension.begin(), m_extension.end());
+			SHFILEINFOW sfi = {};
+			if (SUCCEEDED(SHGetFileInfoW(extWithDot.c_str(), FILE_ATTRIBUTE_NORMAL, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES)) && sfi.hIcon) {
+				HDC hdcScreen = GetDC(NULL);
+				HDC hdcMem = CreateCompatibleDC(hdcScreen);
+				HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, *phbmp);
+				
+				int iconSize = 48;
+				int iconX = outDims.sz.Width - iconSize - 2;
+				int iconY = outDims.sz.Height - iconSize - 2;
+				
+				// 半透明背景
+				HDC hdcAlpha = CreateCompatibleDC(hdcScreen);
+				BITMAPINFO bmiAlpha = {};
+				bmiAlpha.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+				bmiAlpha.bmiHeader.biWidth = iconSize;
+				bmiAlpha.bmiHeader.biHeight = iconSize;
+				bmiAlpha.bmiHeader.biPlanes = 1;
+				bmiAlpha.bmiHeader.biBitCount = 32;
+				bmiAlpha.bmiHeader.biCompression = BI_RGB;
+				
+				void* pAlphaBits = nullptr;
+				HBITMAP hAlphaBmp = CreateDIBSection(hdcScreen, &bmiAlpha, DIB_RGB_COLORS, &pAlphaBits, NULL, 0);
+				if (hAlphaBmp) {
+					HBITMAP hOldAlpha = (HBITMAP)SelectObject(hdcAlpha, hAlphaBmp);
+					RECT rcFill = { 0, 0, iconSize, iconSize };
+					HBRUSH hFillBrush = CreateSolidBrush(RGB(32, 32, 32));
+					FillRect(hdcAlpha, &rcFill, hFillBrush);
+					DeleteObject(hFillBrush);
+					
+					BLENDFUNCTION blend = {};
+					blend.BlendOp = AC_SRC_OVER;
+					blend.SourceConstantAlpha = 180;
+					AlphaBlend(hdcMem, iconX, iconY, iconSize, iconSize, hdcAlpha, 0, 0, iconSize, iconSize, blend);
+					
+					SelectObject(hdcAlpha, hOldAlpha);
+					DeleteObject(hAlphaBmp);
+				}
+				DeleteDC(hdcAlpha);
+				
+				DrawIconEx(hdcMem, iconX, iconY, sfi.hIcon, iconSize, iconSize, 0, NULL, DI_NORMAL);
+				
+				SelectObject(hdcMem, hOldBmp);
+				DeleteDC(hdcMem);
+				ReleaseDC(NULL, hdcScreen);
+				DestroyIcon(sfi.hIcon);
+			}
 		}
 
 		*pdwAlpha = (HasAlpha(s->GetFormat()))?WTSAT_ARGB:WTSAT_RGB;

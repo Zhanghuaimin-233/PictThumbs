@@ -7,6 +7,7 @@
 
 #include <propsys.h>
 #include <thumbcache.h>
+#include <string>
 
 class CPictusThumbnailProvider:public IInitializeWithStream, public IThumbnailProvider {
 public:
@@ -34,6 +35,7 @@ private:
 	long m_cRef;
 	//IStream *m_pStream;
 	IO::FileReader::Ptr m_reader;
+	std::string m_extension;
 };
 
 HRESULT CPictusThumbnailProvider_CreateInstance(REFIID riid, __deref_out void **ppv);
