@@ -117,6 +117,10 @@ PictThumbs/
 - **C++ Standard**: C++17
 - **Dependencies**: No external dependencies (Boost removed)
 
+## Known Limitations
+
+- **PSD format**: Does not support 16-bit/32-bit color depth, ZIP compression, or CMYK color mode. Convert to 8-bit RGB in Photoshop before use.
+
 ## Dependencies
 
 - Windows SDK (shlwapi, thumbcache, propsys, ws2_32, msimg32)
