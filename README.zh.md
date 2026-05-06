@@ -14,11 +14,13 @@ PictThumbs 是从 [Pictus](https://github.com/poppeman/Pictus) 图像查看器�
 |------|--------|------|
 | PCX | .pcx | PC Paintbrush 图像 |
 | TGA | .tga | Truevision Targa 图像 |
-| WBMP | .wbmp | 无线位图 |
+| WBMP | .wbmp, .wbm | 无线位图 |
 | PSD | .psd | Adobe Photoshop 文档 |
-| PSP | .psp | PaintShop Pro 文档 |
+| PSP | .psp, .pspimage | PaintShop Pro 文档 |
 | WebP | .webp | Google WebP 图像 |
-| XYZ | .xyz | Rolander XYZ 图像 |
+| XYZ | .xyz | RPG Maker XYZ 图像 |
+
+**共计**: 7 种格式, 9 个扩展名
 
 ## 构建
 
@@ -94,13 +96,6 @@ PictThumbs/
 ├── illa/                       # 图像编解码库
 │   ├── core/                   # 核心框架（表面、滤镜、渲染）
 │   └── codecs/                 # 各格式编解码器实现
-│       ├── pcx/                # PCX 编解码器
-│       ├── tga/                # TGA 编解码器
-│       ├── wbmp/               # WBMP 编解码器
-│       ├── psd/                # PSD 编解码器
-│       ├── psp/                # PSP 编解码器
-│       ├── webp/               # WebP 编解码器（使用 libwebp）
-│       └── xyz/                # XYZ 编解码器（使用 zlib）
 ├── orz/                        # 工具库
 ├── metadata/                   # EXIF 元数据解析库
 ├── third_party/                # 第三方库
@@ -118,12 +113,17 @@ PictThumbs/
 - **线程模型**: 单线程单元 (STA)
 - **图像处理**: 使用 Lanczos3 重采样算法生成高质量缩略图
 - **Alpha 支持**: 自动检测 Alpha 通道并进行预乘处理
+- **图标叠加**: 文件类型图标 (48x48) 显示在右下角
 - **C++ 标准**: C++17
 - **依赖**: 无外部依赖（已移除 Boost）
 
+## 已知限制
+
+- **PSD 格式**: 不支持 16 位/32 位颜色深度、ZIP 压缩、CMYK 颜色模式。需要在 Photoshop 中转换为 8 位 RGB 模式才能显示缩略图。
+
 ## 依赖
 
-- Windows SDK (shlwapi, thumbcache, propsys, ws2_32)
+- Windows SDK (shlwapi, thumbcache, propsys, ws2_32, msimg32)
 - C++17 标准库
 
 ## 许可证
